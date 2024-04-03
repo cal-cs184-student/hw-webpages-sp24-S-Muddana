@@ -1,7 +1,486 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Homework 4 index.html here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <style>
+        body {
+            background-color: white;
+            padding: 100px;
+            width: 1000px;
+            margin: auto;
+            text-align: left;
+            font-weight: 300;
+            font-family: 'Open Sans', sans-serif;
+            color: #121212;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Source Sans Pro', sans-serif;
+        }
+
+        kbd {
+            color: #121212;
+        }
+    </style>
+    <title>CS 184 Cloth Simulator</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet" />
+
+    <script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    }
+  };
+    </script>
+    <script id="MathJax-script" async=async
+            src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+    </script>
+
+</head>
+
+
+<body>
+
+    <h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2024</h1>
+    <h1 align="middle">Project 4: Cloth Simulator</h1>
+    <h2 align="middle">Satvik Muddana</h2>
+
+    <!-- Add Website URL -->
+    <a href="https://cal-cs184-student.github.io/hw-webpages-sp24-S-Muddana/">Link to my writeup webpage.</a>
+
+    <br />
+
+    <h2 align="middle">Overview</h2>
+    <p>
+        The overview of this project is cloth simulator that I added many features to such as collision handling and shaders to make it as realistic as possible. To try and emulate real
+        life as best as possible, the cloth simulator uses mechanical equations of motion to define how the cloth moves and reacts. This part was challenging because there were many times
+        where I would fail to consider a case or misunderstand a mechanical principle. I created the cloth with a 2D grid of points connected with springs. Thus, motion was driven by spring
+        forces and Verlet integration. Overall, it was great to see a program like this run on my local computer and look so realistic.
+    </p>
+    <br />
+
+    <h2 align="middle">Part 1: Masses and Springs</h2>
+
+    <p>
+        I created the cloth as a 2D grid of point masses where I can set each point mass to either be pinned or not pinned, depending on whether I want it to be stationary or not.
+        All the point masses are connected through a spring lattice structure so that it can follow spring forces (Hooke's Law). The types of springs can be seen below where shear
+        and structural have different rest lengths based on its geometric orientation.
+    </p>
+
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part1/allconstraints.png" align="middle" width="500px" />
+                    <figcaption>pinned2.json Angle 1</figcaption>
+                </td>
+                <td>
+                    <img src="images/part1/all.png" align="middle" width="500px" />
+                    <figcaption>pinned2.json Angle 2</figcaption>
+                </td>
+            </tr>
+            <tr align="center">
+                <td>
+                    <img src="images/part1/noshear.png" align="middle" width="500px" />
+                    <figcaption>No Shearing Constraints</figcaption>
+                </td>
+                <td>
+                    <img src="images/part1/shear.png" align="middle" width="500px" />
+                    <figcaption>Only Shearing Constraints</figcaption>
+                </td>
+            </tr>
+            <tr align="center">
+                <td>
+                    <img src="images/part1/allconstraints.png" align="middle" width="500px" />
+                    <figcaption>All Constraints</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <br />
+
+    <h2 align="middle">Part 2: Simulation via Numerical Integration</h2>
+
+    <p>
+        I user Verlet integration to propagate updates to the positions of the point masses in the 2D grid of the cloth. The three parameters that one can tune in the equations of motion
+        are the spring constant, density (mass), and damping. I display the effects of changing these values below. Overall, the process of verlet integration is to run Forward Euler and
+        ensure that springs do not extend past 10% of their rest length.
+    </p>
+
+    <h3>
+        Changing Spring Constant (ks)
+    </h3>
+
+    <p>
+        Changing the spring constant seems to alter how stretchy the cloth is. Increasing the constant by a power of 10 made it stiffer as shown in the 50,000 N/m image.
+        Decreasing it made the cloth droop more. Another interesting observation (picture not shown) was that increasing the spring constant too much (70,000+) made it so
+        that the cloth never reached a resting state.
+    </p>
+
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part2/default.png" align="middle" width="333px" />
+                    <figcaption>Spring Constant: 5000 N/m (Default)</figcaption>
+                </td>
+                <td>
+                    <img src="images/part2/spring500.png" align="middle" width="333px" />
+                    <figcaption>Spring Constant: 500 N/m</figcaption>
+                </td>
+                <td>
+                    <img src="images/part2/spring50000.png" align="middle" width="333px" />
+                    <figcaption>Spring Constant: 50000 N/m</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <h3>
+        Changing Density
+    </h3>
+
+    <p>
+        Changing the density seems to make the cloth react more to external forces because an increase in density is also an increase in mass in this environment. The force of gravity
+        can be seen more in the image with a higher density. Thus, the effect can almost be described as the inverse of changing the spring constant.
+    </p>
+
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part2/default.png" align="middle" width="333px" />
+                    <figcaption>Density: 15 g/cm^3 (Default)</figcaption>
+                </td>
+                <td>
+                    <img src="images/part2/den1_5.png" align="middle" width="333px" />
+                    <figcaption>Density: 1.5 g/cm^3</figcaption>
+                </td>
+                <td>
+                    <img src="images/part2/den150.png" align="middle" width="333px" />
+                    <figcaption>Density: 150 g/cm^3</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <h3>
+        Changing Damping
+    </h3>
+
+    <p>
+        Changing the damping mostly changing how fast it took for the cloth to reach a resting state. At lower values like 0.1 %, the cloth fell very fast. At 0%, the cloth did not
+        even reach a resting state after a decent amount of waiting time. However, at high values like 1%, the cloth fell very slowly and smoothly. It immediately reached the resting
+        state after it fell.
+    </p>
+
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part2/default.png" align="middle" width="333px" />
+                    <figcaption>Damping: 0.2% (Default)</figcaption>
+                </td>
+                <td>
+                    <img src="images/part2/damp0.png" align="middle" width="333px" />
+                    <figcaption>Damping: 0%</figcaption>
+                </td>
+                <td>
+                    <img src="images/part2/damp1.png" align="middle" width="333px" />
+                    <figcaption>Damping: 1%</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <h3>
+        pinned4.json Final Resting State
+    </h3>
+
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part2/default4.png" align="middle" width="333px" />
+                    <figcaption>Default Parameters</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <br />
+
+    <h2 align="middle">Part 3: Handling Collisions With Other Objects</h2>
+
+    <p>
+        To handle collisions with other objects, I needed to establish where the cloth crossed the surface boundary of the primitives. I simply used the vector definitions to identify this
+        and exert a normal force opposing gravity on the cloth depending on the nature of the contact (top of the sphere vs side of sphere).
+    </p>
+
+    <h3>
+        sphere.json Final Resting State
+    </h3>
+
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part3/spheredefault.png" align="middle" width="333px" />
+                    <figcaption>Spring Constant: 5000 N/m (Default)</figcaption>
+                </td>
+                <td>
+                    <img src="images/part3/sphere500.png" align="middle" width="333px" />
+                    <figcaption>Spring Constant: 500 N/m</figcaption>
+                </td>
+                <td>
+                    <img src="images/part3/sphere50000.png" align="middle" width="333px" />
+                    <figcaption>Spring Constant: 50000 N/m</figcaption>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <img src="images/part3/sphere50000wait.png" align="middle" width="333px" />
+                    <figcaption>Spring Constant: 50000 N/m after waiting more time (cloth fell off)</figcaption>
+                </td>
+                <td>
+                    <img src="images/part3/plane.png" align="middle" width="333px" />
+                    <figcaption>Peaceful Rest (plane.json)</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <br />
+
+
+    <h2 align="middle">Part 4: Handling Self-Collisions</h2>
+
+    <p>
+        I handled self-collisions by separating the point masses in the 2D grid of the cloth into bins and then doing self-intersection checks only between points in the same bin. This works
+        because a collision is not likely between points that are far away from each other. So binning points that are close to each in distance and only check for collisions between those
+        points can boost performance.
+    </p>
+
+    <p>
+        Varying the spring constant created the opposite effect of varying the density. When I decreased spring constant or increased density, the cloth did not bounce as much and simply
+        slipped into the ground, disappearing. The itself did not have any dramatic folds or self-collisions aside from its perturbations and wrinkles. On the other hand, increasing the
+        spring constant or decreasing the density causes more curvature in the folds that are created from the self collisions. The cloth lands of the ground and slowly unfolds overtime.
+    </p>
+
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <figcaption>Early self-collision</figcaption>
+                    <img src="images/part4/early.png" align="middle" width="250px" />
+                    <figcaption>Default</figcaption>
+                </td>
+                <td>
+                    <figcaption>Middle phase 1</figcaption>
+                    <img src="images/part4/middle.png" align="middle" width="250ppx" />
+                    <figcaption>Default</figcaption>
+                </td>
+                <td>
+                    <figcaption>Middle phase 2</figcaption>
+                    <img src="images/part4/bounce.png" align="middle" width="250ppx" />
+                    <figcaption>Default</figcaption>
+                </td>
+                <td>
+                    <figcaption>Close to resting state</figcaption>
+                    <img src="images/part4/end.png" align="middle" width="250ppx" />
+                    <figcaption>Default</figcaption>
+                </td>
+            </tr>
+            <tr align="center">
+                <td>
+                    <img src="images/part4/early500.png" align="middle" width="250px" />
+                    <figcaption>Spring Constant: 500 N/m</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/middle500.png" align="middle" width="250ppx" />
+                    <figcaption>Spring Constant: 500 N/m</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/bounce500.png" align="middle" width="250ppx" />
+                    <figcaption>Spring Constant: 500 N/m</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/end500.png" align="middle" width="250ppx" />
+                    <figcaption>Spring Constant: 500 N/m</figcaption>
+                </td>
+            </tr>
+            <tr align="center">
+                <td>
+                    <img src="images/part4/early50000.png" align="middle" width="250px" />
+                    <figcaption>Spring Constant: 50000 N/m</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/middle50000.png" align="middle" width="250ppx" />
+                    <figcaption>Spring Constant: 50000 N/m</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/bounce50000.png" align="middle" width="250ppx" />
+                    <figcaption>Spring Constant: 50000 N/m</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/end50000.png" align="middle" width="250ppx" />
+                    <figcaption>Spring Constant: 50000 N/m</figcaption>
+                </td>
+            </tr>
+            <tr align="center">
+                <td>
+                    <img src="images/part4/early1_5.png" align="middle" width="250px" />
+                    <figcaption>Density: 1.5 g/cm^3</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/middle1_5.png" align="middle" width="250ppx" />
+                    <figcaption>Density: 1.5 g/cm^3</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/bounce1_5.png" align="middle" width="250ppx" />
+                    <figcaption>Density: 1.5 g/cm^3</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/end1_5.png" align="middle" width="250ppx" />
+                    <figcaption>Density: 1.5 g/cm^3</figcaption>
+                </td>
+            </tr>
+            <tr align="center">
+                <td>
+                    <img src="images/part4/early150.png" align="middle" width="250px" />
+                    <figcaption>Density: 150 g/cm^3</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/middle150.png" align="middle" width="250ppx" />
+                    <figcaption>Density: 150 g/cm^3</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/bounce150.png" align="middle" width="250ppx" />
+                    <figcaption>Density: 150 g/cm^3</figcaption>
+                </td>
+                <td>
+                    <img src="images/part4/end150.png" align="middle" width="250ppx" />
+                    <figcaption>Density: 150 g/cm^3</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <br />
+
+    <h2 align="middle">Part 5: Shaders</h2>
+    <h3>
+        What is a Shader Program?
+    </h3>
+    <p>
+        Shader programs are programs that first assign vertex attributes in the scene to convert it to normalized device coordinates and then assign an RGB-alpha vector for each pixel
+        based on vertex data after interpolation. The first part is called a vertex shader, and the second is a fragment shader. The purpose of a shader program is to avoid exhaustive
+        ray tracing when rendering realistic scenes, which can be very expensive. Shaders are an inexpensive alternate option.
+    </p>
+
+    <h3>
+        Blinn-Phong Shading Model
+    </h3>
+    <p>
+        The Blinn-Phong Shading Model is a technique combining three different types of light/reflection. Ambient light is intensity reflecting uniformly off objects as we have seen in previous projects.
+        Diffuser light uses Lambert's cosine law to assign higher intensities to the surface normals that point closer to the light source. Specular reflection creates a glare for materials
+        that are glossy by relating the surface normal, viewing position, and light source positon.
+    </p>
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part5/ambient.png" align="middle" width="250px" />
+                    <figcaption>Ambient Component</figcaption>
+                </td>
+                <td>
+                    <img src="images/part5/diffuse.png" align="middle" width="250px" />
+                    <figcaption>Diffuse Component</figcaption>
+                </td>
+                <td>
+                    <img src="images/part5/specular.png" align="middle" width="250px" />
+                    <figcaption>Specular Component</figcaption>
+                </td>
+                <td>
+                    <img src="images/part5/blinn.png" align="middle" width="250px" />
+                    <figcaption>Blinn-Phong: ka=0.2, Ia=0.8, kd=0.9, ks=0.8, p=50</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <br />
+    <h3>
+        Custom Texture Mapping Shader
+    </h3>
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part5/customtexturebefore.png" align="middle" width="400px" />
+                    <figcaption>Custom Texture Cloth and Sphere</figcaption>
+                </td>
+                <td>
+                    <img src="images/part5/customtextureafter.png" align="middle" width="400px" />
+                    <figcaption>After Simulation</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <br />
+
+
+    <h3>
+        Bump vs. Displacement Mapping Shaders
+    </h3>
+    <p>
+        When comparing bump and displacement mapping at a sampling of 16 by 16 vertices (coarseness), it is evident that bump mapping is better. The displacement map is very deformed because
+        surface displacements cannot match the higher frequency of the texture content because of the low sampling rate. Increase the sampling rate to 128 by 128 seems to improve the
+        performance of displacement mapping a little bit. Visually, bump mapping seems to performs similarly regardless of the coarseness. However, it definitely performs better than displacement mapping
+        at low sample rates/coarseness.
+    </p>
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part5/bump16.png" align="middle" width="400px" />
+                    <figcaption>Bump Mapping Shader, Coarseness: 16x16</figcaption>
+                </td>
+                <td>
+                    <img src="images/part5/displacement16.png" align="middle" width="400px" />
+                    <figcaption>Displacement Mapping Shader, Coarseness: 16x16</figcaption>
+                </td>
+            </tr>
+            <tr align="center">
+                <td>
+                    <img src="images/part5/bump128.png" align="middle" width="400px" />
+                    <figcaption>Bump Mapping Shader, Coarseness: 128x128</figcaption>
+                </td>
+                <td>
+                    <img src="images/part5/displacement128.png" align="middle" width="400px" />
+                    <figcaption>Displacement Mapping Shader, Coarseness: 128x128</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+
+    <br />
+    <h3>
+        Mirror Shader
+    </h3>
+    <div align="middle">
+        <table style="width:100%">
+            <tr align="center">
+                <td>
+                    <img src="images/part5/mirrorbefore.png" align="middle" width="400px" />
+                    <figcaption>Mirror Cloth and Sphere</figcaption>
+                </td>
+                <td>
+                    <img src="images/part5/mirrorafter.png" align="middle" width="400px" />
+                    <figcaption>After Simulation</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</body>
 </html>
